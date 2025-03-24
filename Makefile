@@ -44,7 +44,7 @@ endif
 
 FLAGS += $(ADD_FLAGS)
 
-LIBS = -lm -L./libs/logger -llogger
+LIBS = -lm -L./libs/logger -llogger -lSDL2
 
 
 DIRS = utils flags
@@ -60,7 +60,7 @@ DEPS_REL_PATH = $(OBJECTS_REL_PATH:%.o=%.d)
 all: build start
 
 start:
-	./$(PROJECT_NAME).out $(OPTS)
+	LD_LIBRARY_PATH=/usr/local/lib ./$(PROJECT_NAME).out $(OPTS)
 
 build: $(PROJECT_NAME).out
 

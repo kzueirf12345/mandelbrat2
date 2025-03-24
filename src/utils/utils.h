@@ -4,8 +4,12 @@
 #include <stdio.h>
 #include <assert.h>
 #include <errno.h>
+#include <SDL2/SDL.h>
 
 #include "concole.h"
+
+#define SCREEN_WIDTH     1000
+#define SCREEN_HEIGHT    1000
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
@@ -25,6 +29,18 @@
         {                                                                                           \
             fprintf(stderr, "Can't " #call_func". Errno: %d\n",                                     \
                             errno);                                                                 \
+            __VA_ARGS__                                                                             \
+            return error_handler;                                                                   \
+        }                                                                                           \
+    } while(0)
+
+#define SDL_ERROR_HANDLE(call_func, ...)                                                            \
+    do {                                                                                            \
+        int error_handler = call_func;                                                              \
+        if (error_handler)                                                                          \
+        {                                                                                           \
+            fprintf(stderr, "Can't " #call_func". Error: %s\n",                                     \
+                            SDL_GetError());                                                        \
             __VA_ARGS__                                                                             \
             return error_handler;                                                                   \
         }                                                                                           \
