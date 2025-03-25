@@ -44,25 +44,20 @@ const char* sdl_objs_strerror(const enum SdlObjsError error)
         }                                                                                           \
     } while(0)
 
-enum SdlObjsError sdl_objs_ctor(sdl_objs_t* const sdl_objs,
-                                const char * const font_filename, const int font_size,
-                                const int screen_width, const int screen_height)
+enum SdlObjsError sdl_objs_ctor(sdl_objs_t* const sdl_objs, const flags_objs_t * const flags_objs)
 {
     lassert(!is_invalid_ptr(sdl_objs), "");
-    lassert(!is_invalid_ptr(font_filename), "");
-    lassert(font_size, "");
-    lassert(screen_width, "");
-    lassert(screen_height, "");
+    lassert(!is_invalid_ptr(flags_objs), "");
 
     SDL_ERROR_HANDLE_(SDL_Init(SDL_INIT_VIDEO));
     TTF_ERROR_HANDLE_(TTF_Init());
 
     sdl_objs->window = SDL_CreateWindow(
         "Masturbator 2000", 
-        SDL_WINDOWPOS_CENTERED, 
-        SDL_WINDOWPOS_CENTERED, 
-        screen_width, 
-        screen_height, 
+        (flags_objs->screen_x_offset == -1 ? (int)SDL_WINDOWPOS_CENTERED : flags_objs->screen_x_offset), 
+        (flags_objs->screen_y_offset == -1 ? (int)SDL_WINDOWPOS_CENTERED : flags_objs->screen_y_offset), 
+        flags_objs->screen_width, 
+        flags_objs->screen_height, 
         SDL_WINDOW_SHOWN
     );
 
@@ -91,8 +86,8 @@ enum SdlObjsError sdl_objs_ctor(sdl_objs_t* const sdl_objs,
         sdl_objs->renderer, 
         SDL_PIXELFORMAT_RGBA32, 
         SDL_TEXTUREACCESS_STREAMING, 
-        screen_width, 
-        screen_height
+        flags_objs->screen_width, 
+        flags_objs->screen_height
     );
 
     if (!sdl_objs->pixels_texture)
@@ -104,7 +99,7 @@ enum SdlObjsError sdl_objs_ctor(sdl_objs_t* const sdl_objs,
         return EXIT_FAILURE;
     }
 
-    sdl_objs->font = TTF_OpenFont(font_filename, font_size);
+    sdl_objs->font = TTF_OpenFont(flags_objs->font_filename, flags_objs->screen_height >> 4);
 
     if (!sdl_objs->font)
     {
@@ -121,6 +116,8 @@ enum SdlObjsError sdl_objs_ctor(sdl_objs_t* const sdl_objs,
 
 void sdl_objs_dtor(sdl_objs_t* const sdl_objs)
 {
+    lassert(!is_invalid_ptr(sdl_objs), "");
+
     TTF_CloseFont       (sdl_objs->font);
     TTF_Quit            ();
     
@@ -128,4 +125,49 @@ void sdl_objs_dtor(sdl_objs_t* const sdl_objs)
     SDL_DestroyRenderer (sdl_objs->renderer);
     SDL_DestroyWindow   (sdl_objs->window);
     SDL_Quit            ();
+}
+
+enum SdlObjsError sdl_handle_events(SDL_Event* event, const flags_objs_t * const flags_objs,
+                                    mandelbrat2_state_t* const state, SDL_bool* const quit)
+{
+    lassert(!is_invalid_ptr(event), "");
+    lassert(!is_invalid_ptr(flags_objs), "");
+    lassert(!is_invalid_ptr(state), "");
+
+    while (SDL_PollEvent(event))
+    {
+        switch(event->type)
+        {
+            case SDL_QUIT: *quit = SDL_TRUE; break;
+
+            case SDL_KEYDOWN:
+            {
+                if (flags_objs->use_graphics)
+                {
+                    SDL_Keymod modifiers = SDL_GetModState();
+
+                    switch (event->key.keysym.sym)
+                    {
+                        case SDLK_LEFT:     state->x_offset += OFFSET_STEP;  break;
+                        case SDLK_RIGHT:    state->x_offset -= OFFSET_STEP;  break;
+                        case SDLK_UP:       state->y_offset += OFFSET_STEP;  break;
+                        case SDLK_DOWN:     state->y_offset -= OFFSET_STEP;  break;
+
+                        case SDLK_EQUALS: 
+                            state->scale *= (1. + SCALE_STEP) * (modifiers & KMOD_SHIFT);  
+                            break;
+                        case SDLK_MINUS:    
+                            state->scale *= (1. - SCALE_STEP) * (modifiers & KMOD_SHIFT);
+                            break;
+
+                        default: break;
+                    }
+                }
+            }
+
+            default: break;
+        }
+    }
+
+    return SDL_OBJS_ERROR_SUCCESS;
 }

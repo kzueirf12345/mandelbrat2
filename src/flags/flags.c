@@ -1,5 +1,6 @@
 #include <string.h>
 #include <getopt.h>
+#include <stdbool.h>
 
 #include "flags/flags.h"
 #include "logger/liblogger.h"
@@ -30,12 +31,42 @@ enum FlagsError flags_objs_ctor(flags_objs_t* const flags_objs)
         return FLAGS_ERROR_SUCCESS;
     }
 
+    if (!strncpy(flags_objs->input_filename, "./assets/settings.txt", FILENAME_MAX))
+    {
+        perror("Can't strncpy flags_objs->input_file");
+        return FLAGS_ERROR_SUCCESS;
+    }
+
+    if (!strncpy(flags_objs->font_filename, "./assets/fonts/Montserrat-SemiBold.ttf", FILENAME_MAX))
+    {
+        perror("Can't strncpy flags_objs->input_file");
+        return FLAGS_ERROR_SUCCESS;
+    }
+
+
+    flags_objs->input_file          = NULL;
+
+    flags_objs->screen_width        = DEFAULT_SCREEN_WIDTH;
+    flags_objs->screen_height       = DEFAULT_SCREEN_HEIGHT;
+    flags_objs->screen_x_offset     = CENTERED_WINDOW_OPT;
+    flags_objs->screen_y_offset     = CENTERED_WINDOW_OPT;
+
+    flags_objs->use_graphics        = true;
+
+    flags_objs->rep_calc_frame_cnt  = 1;
+
     return FLAGS_ERROR_SUCCESS;
 }
 
 enum FlagsError flags_objs_dtor (flags_objs_t* const flags_objs)
 {
     lassert(!is_invalid_ptr(flags_objs), "");
+
+    if (flags_objs->input_file && fclose(flags_objs->input_file))
+    {
+        perror("Can't fclose input file");
+        return FLAGS_ERROR_FAILURE;
+    }
 
     return FLAGS_ERROR_SUCCESS;
 }
@@ -49,7 +80,7 @@ enum FlagsError flags_processing(flags_objs_t* const flags_objs,
     lassert(argc, "");
 
     int getopt_rez = 0;
-    while ((getopt_rez = getopt(argc, argv, "l:")) != -1)
+    while ((getopt_rez = getopt(argc, argv, "l:i:w:h:x:y:s:g:r:f:")) != -1)
     {
         switch (getopt_rez)
         {
@@ -64,12 +95,108 @@ enum FlagsError flags_processing(flags_objs_t* const flags_objs,
                 break;
             }
 
+            case 'i':
+            {
+                if (!strncpy(flags_objs->input_filename, optarg, FILENAME_MAX))
+                {
+                    perror("Can't strncpy flags_objs->input_filename");
+                    return FLAGS_ERROR_FAILURE;
+                }
+
+                break;
+            }
+
+            case 'w':
+            {
+                if ((flags_objs->screen_width = atoi(optarg)) == 0)
+                {
+                    perror("Can't atoi screen width");
+                    return FLAGS_ERROR_FAILURE;
+                }
+
+                break;
+            }
+
+            case 'h':
+            {
+                if ((flags_objs->screen_height = atoi(optarg)) == 0)
+                {
+                    perror("Can't atoi screen height");
+                    return FLAGS_ERROR_FAILURE;
+                }
+
+                break;
+            }
+
+            case 'x':
+            {
+                flags_objs->screen_x_offset = atoi(optarg);
+
+                break;
+            }
+
+            case 'y':
+            {
+                flags_objs->screen_y_offset = atoi(optarg);
+
+                break;
+            }
+
+            case 's':
+            {
+                if (sscanf(optarg, "%dx%dx%dx%d",
+                       &flags_objs->screen_width,    &flags_objs->screen_height,
+                       &flags_objs->screen_x_offset, &flags_objs->screen_y_offset)
+                    != 4)
+                {
+                    perror("Can't sscanf screen sizes and offsets");
+                    return FLAGS_ERROR_FAILURE;
+                }
+
+                break;
+            }
+
+            case 'g':
+            {
+                flags_objs->use_graphics = (bool)atoi(optarg);
+
+                break;
+            }
+
+            case 'r':
+            {
+                if ((flags_objs->rep_calc_frame_cnt = (size_t)atoll(optarg)) == 0)
+                {
+                    perror("Can't atoi count repeat caluclation one frame");
+                    return FLAGS_ERROR_FAILURE;
+                }
+
+                break;
+            }
+
+            case 'f':
+            {
+                if (!strncpy(flags_objs->font_filename, optarg, FILENAME_MAX))
+                {
+                    perror("Can't strncpy flags_objs->font_filename");
+                    return FLAGS_ERROR_FAILURE;
+                }
+
+                break;
+            }
+
             default:
             {
                 fprintf(stderr, "Getopt error - d: %d, c: %c\n", getopt_rez, (char)getopt_rez);
                 return FLAGS_ERROR_FAILURE;
             }
         }
+    }
+
+    if (!(flags_objs->input_file = fopen(flags_objs->input_filename, "rb")))
+    {
+        perror("Can't open input file");
+        return FLAGS_ERROR_FAILURE;
     }
 
     return FLAGS_ERROR_SUCCESS;

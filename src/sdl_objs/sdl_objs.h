@@ -6,6 +6,9 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
+#include "flags/flags.h"
+#include "mandelbrat2/mandelbrat2.h"
+
 enum SdlObjsError
 {
     SDL_OBJS_ERROR_SUCCESS          = 0,
@@ -37,9 +40,10 @@ typedef struct SdlObjs
     TTF_Font*       font;
 } sdl_objs_t;
 
-enum SdlObjsError sdl_objs_ctor(sdl_objs_t* const sdl_objs,
-                                const char * const font_filename, const int font_size,
-                                const int screen_width, const int screen_height);
+enum SdlObjsError sdl_objs_ctor(sdl_objs_t* const sdl_objs, const flags_objs_t * const flags_objs);
 void              sdl_objs_dtor(sdl_objs_t* const sdl_objs);
+
+enum SdlObjsError sdl_handle_events(SDL_Event* event, const flags_objs_t * const flags_objs,
+                                    mandelbrat2_state_t* const state, SDL_bool* const quit);
 
 #endif /* SDL_OBJS_SRC_SDL_OBJS_SDL_OBJS_H */

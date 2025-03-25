@@ -11,6 +11,7 @@ const char* mandelbrat2_strerror(const enum Mandelbrat2Error error)
     {
         CASE_ENUM_TO_STRING_(MANDELBRAT2_ERROR_SUCCESS);
         CASE_ENUM_TO_STRING_(MANDELBRAT2_ERROR_SDL);
+        CASE_ENUM_TO_STRING_(MANDELBRAT2_ERROR_STANDARD_ERRNO);
         default:
             return "UNKNOWN_MANDELBRAT2_ERROR";
     }
@@ -31,61 +32,97 @@ const char* mandelbrat2_strerror(const enum Mandelbrat2Error error)
     } while(0)
 
 
-enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture)
+enum Mandelbrat2Error mandelbrat2_state_ctor(mandelbrat2_state_t* const state, 
+                                             const flags_objs_t* const flags_objs)
 {
-    lassert(!is_invalid_ptr(pixels_texture), "");
+    lassert(!is_invalid_ptr(state), "");
+    lassert(!is_invalid_ptr(flags_objs), "");
 
-    const size_t    ITERS_CNT       = 256;
-    const double    R_CIRCLE_INF2   = 10*10;
-    const double    SCALE           = 500;
+    state->x_offset = (double)(flags_objs->screen_width  >> 1);
+    state->y_offset = (double)(flags_objs->screen_height >> 1);
 
-    const double    X_OFFSET        = (double)((SCREEN_WIDTH >> 1) + 100);
-    const double    Y_OFFSET        = (double)( SCREEN_HEIGHT >> 1);
+    if (!fscanf(flags_objs->input_file, 
+                "%*[^$]$\n"
+                "iters_cnt = %zu\n"
+                "r_circle_inf = %lg\n"
+                "scale = %lg",
+                &state->iters_cnt,
+                &state->r_circle_inf,
+                &state->scale
+        ))
+    {
+        perror("Can't fscanf state into input file");
+        return MANDELBRAT2_ERROR_STANDARD_ERRNO;
+    }
+
+    return MANDELBRAT2_ERROR_SUCCESS;
+}
+
+enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture, 
+                                  const mandelbrat2_state_t* const state,
+                                  const flags_objs_t* const flags_objs)
+{
+    if (flags_objs->use_graphics)
+    {
+        lassert(!is_invalid_ptr(pixels_texture), "");
+    }   
+    lassert(!is_invalid_ptr(state), "");
+    lassert(!is_invalid_ptr(flags_objs), "");
+
+    const double    R_CIRCLE_INF2   = state->r_circle_inf*state->r_circle_inf;
+    const double    SCALE           = 1 / state->scale;
 
     void *pixels_void;
     int pitch;
-    SDL_ERROR_HANDLE_(SDL_LockTexture(pixels_texture, NULL, &pixels_void, &pitch));
+
+    if (flags_objs->use_graphics)
+    {
+        SDL_ERROR_HANDLE_(SDL_LockTexture(pixels_texture, NULL, &pixels_void, &pitch));
+    }
 
     Uint32* pixels = (Uint32*)pixels_void;
 
-    for (int y = 0; y < SCREEN_HEIGHT; y++) {
-        for (int x = 0; x < SCREEN_WIDTH; x++) {
-            pixels[y * (pitch/4) + x] = 0xFFFFFFFF;
-        }
-    }
-
-    for (size_t y_screen = 0; y_screen < SCREEN_HEIGHT; ++y_screen)
+    for (size_t repeat = 0; repeat < flags_objs->rep_calc_frame_cnt; ++repeat)
     {
-        const double y0 = ((double)y_screen - Y_OFFSET) / SCALE;
-
-        for (size_t x_screen = 0; x_screen < SCREEN_WIDTH; ++x_screen)
+        for (size_t y_screen = 0; y_screen < (size_t)flags_objs->screen_height; ++y_screen)
         {
-            const double x0 = ((double)x_screen - X_OFFSET) / SCALE;
-
-            size_t iter = 0;
-            for (double x = x0, y = y0; iter < ITERS_CNT; ++iter)
+            const double y0 = ((double)y_screen - state->y_offset) * SCALE;
+    
+            for (size_t x_screen = 0; x_screen < (size_t)flags_objs->screen_width; ++x_screen)
             {
-                const double xx = x * x;
-                const double yy = y * y;
-                const double xy = x * y;
-
-                if (xx + yy > R_CIRCLE_INF2) 
-                    break;
+                const double x0 = ((double)x_screen - state->x_offset) * SCALE;
+    
+                size_t iter = 0;
+                for (double x = x0, y = y0; iter < state->iters_cnt; ++iter)
+                {
+                    const double xx = x * x;
+                    const double yy = y * y;
+                    const double xy = x * y;
+    
+                    if (xx + yy > R_CIRCLE_INF2) 
+                        break;
+                    
+                    x = xx - yy + x0;
+                    y = 2 * xy + y0;
+                }
+    
+                if (flags_objs->use_graphics)
+                {
+    
+                const size_t pixel_addr = (y_screen) * (size_t)(pitch >> 2) + x_screen;
                 
-                x = xx - yy + x0;
-                y = 2 * xy + y0;
+#include SETTINGS_FILENAME  // fill pixels[pixel_addr]
+                
+                }
+    
             }
-
-            const size_t pixel_addr = (y_screen) * (size_t)(pitch >> 2) + x_screen;
-            
-            if (iter == ITERS_CNT) // in circle
-                pixels[pixel_addr] = 0xFF000000;
-            else
-                pixels[pixel_addr] = 0xFF0000FF;
         }
     }
 
-    SDL_UnlockTexture(pixels_texture);
+    if (flags_objs->use_graphics)
+    {
+        SDL_UnlockTexture(pixels_texture);
+    }
 
     return MANDELBRAT2_ERROR_SUCCESS;
 }

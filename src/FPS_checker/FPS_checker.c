@@ -111,7 +111,7 @@ enum FPSCheckerError FPS_checker_print(const sdl_objs_t* const sdl_objs)
     SDL_Surface *fps_surface = TTF_RenderText_Blended(
         sdl_objs->font, 
         fps_str, 
-        (SDL_Color){0, 0, 0, 255} // black
+        (SDL_Color){255, 255, 255, 255} // black
     );
     free(fps_str);
 

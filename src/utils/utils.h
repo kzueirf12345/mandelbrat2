@@ -8,8 +8,17 @@
 
 #include "concole.h"
 
-#define SCREEN_WIDTH     2048
-#define SCREEN_HEIGHT    1024
+#define DEFAULT_SCREEN_WIDTH    2048
+#define DEFAULT_SCREEN_HEIGHT   1024
+
+#define CENTERED_WINDOW_OPT     -1
+
+#define FPS_FREQ_MS             100
+
+#define SETTINGS_FILENAME      "settings.txt"
+
+#define OFFSET_STEP       20
+#define SCALE_STEP        0.1
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))

@@ -1,6 +1,8 @@
 #ifndef DIFFER_SRC_FLAGS_FLAGS_H
 #define DIFFER_SRC_FLAGS_FLAGS_H
 
+#include <stdbool.h>
+
 #include "utils/utils.h"
 
 enum FlagsError
@@ -34,16 +36,19 @@ enum Mode
 typedef struct FlagsObjs
 {
     char log_folder         [FILENAME_MAX];
-    // char input_filename     [FILENAME_MAX];
-    // char output_filename    [FILENAME_MAX];
+    char input_filename     [FILENAME_MAX];
+    char font_filename      [FILENAME_MAX];
 
-    // FILE* input_file;
-    // FILE* output_file;
+    FILE* input_file;
 
-    // int screen_width;
-    // int screen_height;
-    // int screen_x_offset;
-    // int screen_y_offset;
+    int screen_width;
+    int screen_height;
+    int screen_x_offset;
+    int screen_y_offset;
+
+    bool use_graphics;
+
+    size_t rep_calc_frame_cnt;
 } flags_objs_t;
 
 enum FlagsError flags_objs_ctor (flags_objs_t* const flags_objs);

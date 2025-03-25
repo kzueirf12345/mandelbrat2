@@ -32,7 +32,7 @@ SANITIZER = -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,fl
 		shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
 
 DEBUG_FLAGS = -D _DEBUG  -ggdb -Og -g3 -D_FORTIFY_SOURCES=3 $(SANITIZER)
-RELEASE_FLAGS = -DNDEBUG -O3
+RELEASE_FLAGS = -DNDEBUG -O2
 
 ifneq ($(DEBUG_),0)
 FLAGS += $(DEBUG_FLAGS)
@@ -73,7 +73,7 @@ $(PROJECT_NAME).out: $(OBJECTS_REL_PATH)
 	@$(COMPILER) $(FLAGS) -o $@ $^  $(LIBS)
 
 $(BUILD_DIR)/%.o : $(SRC_DIR)/%.c | ./$(BUILD_DIR)/ $(BUILD_DIRS) logger_build
-	@$(COMPILER) $(FLAGS) -I$(SRC_DIR) -I./libs -c -MMD -MP $< -o $@
+	@$(COMPILER) $(FLAGS) -I$(SRC_DIR) -I./libs -I./assets -c -MMD -MP $< -o $@
 
 -include $(DEPS_REL_PATH)
 
@@ -114,3 +114,6 @@ clean_txt:
 
 clean_bin:
 	rm -rf ./*.bin
+
+
+#make OPTS="-l ./log/ -i ./assets/settings2.txt -w 500 -h 400 -x 100 -y 500 -r 1 - f ./assets/fonts/Montserrat.ttf -g 0"
