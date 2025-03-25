@@ -32,7 +32,7 @@ SANITIZER = -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,fl
 		shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
 
 DEBUG_FLAGS = -D _DEBUG  -ggdb -Og -g3 -D_FORTIFY_SOURCES=3 $(SANITIZER)
-RELEASE_FLAGS = -DNDEBUG -O2
+RELEASE_FLAGS = -DNDEBUG -O3
 
 ifneq ($(DEBUG_),0)
 FLAGS += $(DEBUG_FLAGS)
@@ -44,13 +44,14 @@ endif
 
 FLAGS += $(ADD_FLAGS)
 
-LIBS = -lm -L./libs/logger -llogger -lSDL2
+LIBS = -lm -lSDL2 -lSDL2main -lSDL2_ttf -L./libs/logger -llogger
 
 
-DIRS = utils flags
+DIRS = utils flags mandelbrat2 FPS_checker sdl_objs
 BUILD_DIRS = $(DIRS:%=$(BUILD_DIR)/%)
 
-SOURCES = main.c utils/utils.c flags/flags.c
+SOURCES = main.c utils/utils.c flags/flags.c mandelbrat2/mandelbrat2.c FPS_checker/FPS_checker.c	\
+		  sdl_objs/sdl_objs.c
 
 SOURCES_REL_PATH = $(SOURCES:%=$(SRC_DIR)/%)
 OBJECTS_REL_PATH = $(SOURCES:%.c=$(BUILD_DIR)/%.o)

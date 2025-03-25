@@ -8,8 +8,8 @@
 
 #include "concole.h"
 
-#define SCREEN_WIDTH     1000
-#define SCREEN_HEIGHT    1000
+#define SCREEN_WIDTH     2048
+#define SCREEN_HEIGHT    1024
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))

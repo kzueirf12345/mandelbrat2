@@ -33,8 +33,17 @@ enum Mode
 
 typedef struct FlagsObjs
 {
-    char log_folder  [FILENAME_MAX];
-    
+    char log_folder         [FILENAME_MAX];
+    // char input_filename     [FILENAME_MAX];
+    // char output_filename    [FILENAME_MAX];
+
+    // FILE* input_file;
+    // FILE* output_file;
+
+    // int screen_width;
+    // int screen_height;
+    // int screen_x_offset;
+    // int screen_y_offset;
 } flags_objs_t;
 
 enum FlagsError flags_objs_ctor (flags_objs_t* const flags_objs);

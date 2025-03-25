@@ -1,22 +1,25 @@
 #include <stdio.h>
 #include <locale.h>
+
 #include <SDL2/SDL.h>
 
 #include "utils/utils.h"
 #include "logger/liblogger.h"
 #include "flags/flags.h"
+#include "mandelbrat2/mandelbrat2.h"
+#include "sdl_objs/sdl_objs.h"
+#include "FPS_checker/FPS_checker.h"
 
 int init_all(flags_objs_t* const flags_objs, const int argc, char* const * argv, 
-             SDL_Window** window, SDL_Renderer** renderer);
-int dtor_all(flags_objs_t* const flags_objs, SDL_Window** window, SDL_Renderer** renderer);
+             sdl_objs_t* const sdl_objs);
+int dtor_all(flags_objs_t* const flags_objs, sdl_objs_t* const sdl_objs);
 
 int main(const int argc, char* const argv[])
 {
     flags_objs_t    flags_objs  = {};
-    SDL_Window*     window      = NULL;
-    SDL_Renderer*   renderer    = NULL;
+    sdl_objs_t      sdl_objs    = {};
 
-    INT_ERROR_HANDLE(init_all(&flags_objs, argc, argv, &window, &renderer));
+    INT_ERROR_HANDLE(init_all(&flags_objs, argc, argv, &sdl_objs));
 
     SDL_Event event = {};
     SDL_bool quit = SDL_FALSE;
@@ -29,32 +32,39 @@ int main(const int argc, char* const argv[])
                 quit = SDL_TRUE;
             }
         }
-
-        SDL_ERROR_HANDLE(SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255),
-                                                          dtor_all(&flags_objs, &window, &renderer);
-        );
-        SDL_ERROR_HANDLE(SDL_RenderClear(renderer),
-                                                          dtor_all(&flags_objs, &window, &renderer);
+       
+        SDL_ERROR_HANDLE(SDL_RenderClear(sdl_objs.renderer),
+                                                                   dtor_all(&flags_objs, &sdl_objs);
         );
 
-        SDL_RenderPresent(renderer);
+        MANDELBRAT2_ERROR_HANDLE(print_frame(sdl_objs.pixels_texture),
+                                                                   dtor_all(&flags_objs, &sdl_objs);
+        );
+
+        SDL_ERROR_HANDLE(SDL_RenderCopy(sdl_objs.renderer, sdl_objs.pixels_texture, NULL, NULL),
+                                                                   dtor_all(&flags_objs, &sdl_objs);
+        );
+
+        FPS_CHECKER_ERROR_HANDLE(FPS_checker_update(&sdl_objs),
+                                                                   dtor_all(&flags_objs, &sdl_objs);
+        );
+
+        SDL_RenderPresent(sdl_objs.renderer);
     }
 
-    INT_ERROR_HANDLE(dtor_all(&flags_objs, &window, &renderer));
+    INT_ERROR_HANDLE(                                            dtor_all(&flags_objs, &sdl_objs););
 
     return EXIT_SUCCESS;
 }
 
 int logger_init(char* const log_folder);
-int sdl_init(SDL_Window** window, SDL_Renderer** renderer);
 
 int init_all(flags_objs_t* const flags_objs, const int argc, char* const * argv, 
-             SDL_Window** window, SDL_Renderer** renderer)
+             sdl_objs_t* const sdl_objs)
 {
     lassert(argc, "");
     lassert(!is_invalid_ptr(argv), "");
-    lassert(!is_invalid_ptr(window), "");
-    lassert(!is_invalid_ptr(renderer), "");
+    lassert(!is_invalid_ptr(sdl_objs), "");
 
     if (!setlocale(LC_ALL, "ru_RU.utf8"))
     {
@@ -72,18 +82,28 @@ int init_all(flags_objs_t* const flags_objs, const int argc, char* const * argv,
         return EXIT_FAILURE;
     }
 
-    SDL_ERROR_HANDLE(sdl_init(window, renderer),
-                                                          logger_dtor();flags_objs_dtor(flags_objs);
+    SDL_OBJS_ERROR_HANDLE(
+        sdl_objs_ctor(sdl_objs, "assets/Montserrat-SemiBold.ttf", 69, SCREEN_WIDTH, SCREEN_HEIGHT),
+                                                                        flags_objs_dtor(flags_objs);
+                                                                                      logger_dtor();
+    );
+
+    FPS_CHECKER_ERROR_HANDLE(FPS_checker_ctor(1000),
+                                                                            sdl_objs_dtor(sdl_objs);
+                                                                        flags_objs_dtor(flags_objs);
+                                                                                      logger_dtor();
     );
 
     return EXIT_SUCCESS;
 }
 
-int dtor_all(flags_objs_t* const flags_objs, SDL_Window** window, SDL_Renderer** renderer)
+int dtor_all(flags_objs_t* const flags_objs, sdl_objs_t* const sdl_objs)
 {
     LOGG_ERROR_HANDLE(                                                               logger_dtor());
     FLAGS_ERROR_HANDLE(                                                flags_objs_dtor(flags_objs));
-                               SDL_DestroyRenderer(*renderer);SDL_DestroyWindow(*window);SDL_Quit();
+
+                                                                                 FPS_checker_dtor();
+                                                                            sdl_objs_dtor(sdl_objs);
     return EXIT_SUCCESS;
 }
 
@@ -115,42 +135,3 @@ int logger_init(char* const log_folder)
 }
 #undef LOGOUT_FILENAME
 #undef   DUMB_FILENAME
-
-int sdl_init(SDL_Window** window, SDL_Renderer** renderer)
-{
-    lassert(!is_invalid_ptr(window), "");
-    lassert(!is_invalid_ptr(renderer), "");
-
-    SDL_ERROR_HANDLE(SDL_Init(SDL_INIT_VIDEO));
-
-    *window = SDL_CreateWindow(
-        "Masturbator 2000", 
-        SDL_WINDOWPOS_CENTERED, 
-        SDL_WINDOWPOS_CENTERED, 
-        SCREEN_WIDTH, 
-        SCREEN_HEIGHT, 
-        SDL_WINDOW_SHOWN
-    );
-
-    if (!*window)
-    {
-        printf("Can`t SDL_CreateWindow. Error: %s\n", SDL_GetError());
-                                                                                         SDL_Quit();
-        return EXIT_FAILURE;
-    }
-
-    *renderer = SDL_CreateRenderer(
-        *window, 
-        -1, 
-        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
-    );
-
-    if (!*renderer)
-    {
-        printf("SCan`t SDL_CreateRenderer. Error: %s\n", SDL_GetError());
-                                                              SDL_DestroyWindow(*window);SDL_Quit();
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
-}
