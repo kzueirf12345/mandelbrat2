@@ -1,4 +1,8 @@
-pixels[pixel_addr] = (iter == state->iters_cnt ? 0xFF000000 : 0xFF0000FF);
+pixels[pixel_addr] = 
+    (iter == state->iters_cnt) 
+  ? 0xFF000000 
+  : (0xFF000000 | (MIN(255, iter * 5) << 16) | (MIN(255, iter * 10) << 8) | MIN(255, iter * 20));
+  
 /*$
 iters_cnt = 64
 r_circle_inf = 3

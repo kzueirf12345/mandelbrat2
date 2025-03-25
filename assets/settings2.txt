@@ -1,4 +1,4 @@
-pixels[pixel_addr] = (iter == state->iters_cnt ? 0xFF0000FF0 : xFF000000);
+pixels[pixel_addr] = (iter == state->iters_cnt ? xFF0000000 : xFF0000FF0);
 /*$
 iters_cnt = 64
 r_circle_inf = 10
