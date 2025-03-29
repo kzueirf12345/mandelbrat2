@@ -42,7 +42,7 @@ endif
 
 endif
 
-FLAGS += $(ADD_FLAGS)
+FLAGS += $(ADD_FLAGS) -mavx -mavx2
 
 LIBS = -lm -lSDL2 -lSDL2main -lSDL2_ttf -L./libs/logger -llogger
 

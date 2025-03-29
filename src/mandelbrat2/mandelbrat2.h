@@ -47,4 +47,8 @@ enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture,
                                   const mandelbrat2_state_t* const state,
                                   const flags_objs_t* const flags_objs);
 
+enum Mandelbrat2Error print_frame_optimize(SDL_Texture* pixels_texture, 
+                                           const mandelbrat2_state_t* const state,
+                                           const flags_objs_t* const flags_objs);
+
 #endif /* MANDELBRAT2_SRC_MANDELBRAT2_MANDELBRAT2_H */

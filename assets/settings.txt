@@ -1,10 +1,29 @@
 pixels[pixel_addr] = 
+    ((size_t)iter[i] == ITERS_CNT) 
+  ? 0xFF000000 
+  : (0xFF000000 
+     | (MIN(255, (size_t)iter[i] * 5) << 16) 
+     | (MIN(255, (size_t)iter[i] * 10) << 8) 
+     | MIN(255, (size_t)iter[i] * 20));
+/*$
+iters_cnt = 64
+r_circle_inf = 10
+scale = 550
+*/
+
+/*
+pixels[pixel_addr] = (iter == state->iters_cnt ? 0xFF0000000 : 0xFF0000FF0);
+
+pixels[pixel_addr] = 
     (iter == state->iters_cnt) 
   ? 0xFF000000 
   : (0xFF000000 | (MIN(255, iter * 5) << 16) | (MIN(255, iter * 10) << 8) | MIN(255, iter * 20));
-  
-/*$
-iters_cnt = 64
-r_circle_inf = 3
-scale = 550
+
+pixels[pixel_addr] = 
+    ((size_t)iter[i] == ITERS_CNT) 
+  ? 0xFF000000 
+  : (0xFF000000 
+     | (MIN(255, (size_t)iter[i] * 5) << 16) 
+     | (MIN(255, (size_t)iter[i] * 10) << 8) 
+     | MIN(255, (size_t)iter[i] * 20));
 */
