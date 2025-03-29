@@ -146,6 +146,11 @@ enum SdlObjsError sdl_handle_events(SDL_Event* event, const flags_objs_t * const
                 {
                     SDL_Keymod modifiers = SDL_GetModState();
 
+                    // if (event->key.keysym.sym == SDLK_LEFT)  state->x_offset += OFFSET_STEP;
+                    // if (event->key.keysym.sym == SDLK_RIGHT) state->x_offset -= OFFSET_STEP;
+                    // if (event->key.keysym.sym == SDLK_UP)    state->y_offset += OFFSET_STEP;
+                    // if (event->key.keysym.sym == SDLK_DOWN)  state->y_offset -= OFFSET_STEP;
+
                     switch (event->key.keysym.sym)
                     {
                         case SDLK_LEFT:     state->x_offset += OFFSET_STEP;  break;
@@ -154,7 +159,7 @@ enum SdlObjsError sdl_handle_events(SDL_Event* event, const flags_objs_t * const
                         case SDLK_DOWN:     state->y_offset -= OFFSET_STEP;  break;
 
                         case SDLK_EQUALS: 
-                            state->scale *= (1. + SCALE_STEP) * (modifiers & KMOD_SHIFT);  
+                            state->scale *= (1. + SCALE_STEP) * (modifiers & KMOD_SHIFT); 
                             break;
                         case SDLK_MINUS:    
                             state->scale *= (1. - SCALE_STEP) * (modifiers & KMOD_SHIFT);

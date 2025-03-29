@@ -1,0 +1,6 @@
+pixels[pixel_addr] = (iter[i] == ITERS_CNT ? 0xFFFFFFFFFF : 0xFF0000000);
+/*$
+iters_cnt = 64
+r_circle_inf = 10
+scale = 550
+*/

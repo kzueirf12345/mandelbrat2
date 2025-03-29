@@ -1,6 +1,0 @@
-pixels[pixel_addr] = (iter == state->iters_cnt ? xFF0000000 : xFF0000FF0);
-/*$
-iters_cnt = 64
-r_circle_inf = 10
-scale = 500
-*/

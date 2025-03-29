@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <locale.h>
+#include <xmmintrin.h>
 
 #include <SDL2/SDL.h>
 
@@ -40,7 +41,7 @@ int main(const int argc, char* const argv[])
         }
     
 
-        MANDELBRAT2_ERROR_HANDLE(print_frame_optimize(sdl_objs.pixels_texture, &state, &flags_objs),
+        MANDELBRAT2_ERROR_HANDLE(print_frame(sdl_objs.pixels_texture, &state, &flags_objs),
                                                                    dtor_all(&flags_objs, &sdl_objs);
         );
 

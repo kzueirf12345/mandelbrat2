@@ -10,6 +10,7 @@ SRC_DIR = ./src
 COMPILER = gcc
 
 DEBUG_ ?= 1
+USE_AVX2 ?= 1
 
 ifeq ($(origin FLAGS), undefined)
 
@@ -32,7 +33,7 @@ SANITIZER = -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,fl
 		shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
 
 DEBUG_FLAGS = -D _DEBUG  -ggdb -Og -g3 -D_FORTIFY_SOURCES=3 $(SANITIZER)
-RELEASE_FLAGS = -DNDEBUG -O2
+RELEASE_FLAGS = -DNDEBUG -O3
 
 ifneq ($(DEBUG_),0)
 FLAGS += $(DEBUG_FLAGS)
@@ -40,9 +41,13 @@ else
 FLAGS += $(RELEASE_FLAGS)
 endif
 
+ifneq ($(USE_AVX2),0)
+FLAGS += -mavx2
 endif
 
-FLAGS += $(ADD_FLAGS) -mavx -mavx2
+endif
+
+FLAGS += $(ADD_FLAGS)
 
 LIBS = -lm -lSDL2 -lSDL2main -lSDL2_ttf -L./libs/logger -llogger
 
@@ -116,4 +121,5 @@ clean_bin:
 	rm -rf ./*.bin
 
 
-#make OPTS="-l ./log/ -i ./assets/settings2.txt -w 500 -h 400 -x 100 -y 500 -r 1 - f ./assets/fonts/Montserrat.ttf -g 0"
+# make USE_AVX2=1 ADD_FLAGS=-DSETTINGS_FILENAME='\"settings_avx.txt\"' OPTS="-g" DEBUG_=0 rebuild all 
+# make USE_AVX2=0 ADD_FLAGS=-DSETTINGS_FILENAME='\"settings.txt\"'     OPTS="-g" DEBUG_=0 rebuild all 

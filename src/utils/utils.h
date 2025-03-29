@@ -15,7 +15,9 @@
 
 #define FPS_FREQ_MS             100
 
+#ifndef SETTINGS_FILENAME
 #define SETTINGS_FILENAME      "settings.txt"
+#endif /*SETTINGS_FILENAME*/
 
 #define OFFSET_STEP       20
 #define SCALE_STEP        0.1

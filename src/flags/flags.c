@@ -51,7 +51,7 @@ enum FlagsError flags_objs_ctor(flags_objs_t* const flags_objs)
     flags_objs->screen_x_offset     = CENTERED_WINDOW_OPT;
     flags_objs->screen_y_offset     = CENTERED_WINDOW_OPT;
 
-    flags_objs->use_graphics        = true;
+    flags_objs->use_graphics        = false;
 
     flags_objs->rep_calc_frame_cnt  = 1;
 
@@ -80,7 +80,7 @@ enum FlagsError flags_processing(flags_objs_t* const flags_objs,
     lassert(argc, "");
 
     int getopt_rez = 0;
-    while ((getopt_rez = getopt(argc, argv, "l:i:w:h:x:y:s:g:r:f:")) != -1)
+    while ((getopt_rez = getopt(argc, argv, "l:i:w:h:x:y:s:r:f:g")) != -1)
     {
         switch (getopt_rez)
         {
@@ -158,7 +158,7 @@ enum FlagsError flags_processing(flags_objs_t* const flags_objs,
 
             case 'g':
             {
-                flags_objs->use_graphics = (bool)atoi(optarg);
+                flags_objs->use_graphics = true;
 
                 break;
             }

@@ -35,9 +35,9 @@ enum Mode
 
 typedef struct FlagsObjs
 {
-    char log_folder         [FILENAME_MAX];
-    char input_filename     [FILENAME_MAX];
-    char font_filename      [FILENAME_MAX];
+    char log_folder         [FILENAME_MAX + 1];
+    char input_filename     [FILENAME_MAX + 1];
+    char font_filename      [FILENAME_MAX + 1];
 
     FILE* input_file;
 
