@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <locale.h>
 #include <xmmintrin.h>
+#include <time.h>
 
 #include <SDL2/SDL.h>
 
@@ -39,11 +40,15 @@ int main(const int argc, char* const argv[])
                                                                    dtor_all(&flags_objs, &sdl_objs);
             );
         }
-    
+        
+        clock_t start_time = clock();
 
         MANDELBRAT2_ERROR_HANDLE(print_frame(sdl_objs.pixels_texture, &state, &flags_objs),
                                                                    dtor_all(&flags_objs, &sdl_objs);
         );
+
+        double elapsed_time = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+        printf("time of work on one frame: %lg s\n", elapsed_time);
 
         if (flags_objs.use_graphics)
         {
