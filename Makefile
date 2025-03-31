@@ -33,7 +33,7 @@ SANITIZER = -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,fl
 		shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
 
 DEBUG_FLAGS = -D _DEBUG  -ggdb -Og -g3 -D_FORTIFY_SOURCES=3 $(SANITIZER)
-RELEASE_FLAGS = -DNDEBUG -O3
+RELEASE_FLAGS = -DNDEBUG -O3 -ffast-math -funroll-loops -flto -fopenmp -mfma
 
 ifneq ($(DEBUG_),0)
 FLAGS += $(DEBUG_FLAGS)
@@ -42,7 +42,7 @@ FLAGS += $(RELEASE_FLAGS)
 endif
 
 ifneq ($(USE_AVX2),0)
-FLAGS += -mavx2
+FLAGS += -mavx -mavx2 -march=native 
 endif
 
 endif
@@ -52,10 +52,10 @@ FLAGS += $(ADD_FLAGS)
 LIBS = -lm -lSDL2 -lSDL2main -lSDL2_ttf -L./libs/logger -llogger
 
 
-DIRS = utils flags mandelbrat2 FPS_checker sdl_objs
+DIRS = utils flags mandelbrat2 time_checker sdl_objs
 BUILD_DIRS = $(DIRS:%=$(BUILD_DIR)/%)
 
-SOURCES = main.c utils/utils.c flags/flags.c mandelbrat2/mandelbrat2.c FPS_checker/FPS_checker.c	\
+SOURCES = main.c utils/utils.c flags/flags.c mandelbrat2/mandelbrat2.c time_checker/time_checker.c	\
 		  sdl_objs/sdl_objs.c
 
 SOURCES_REL_PATH = $(SOURCES:%=$(SRC_DIR)/%)
@@ -119,6 +119,9 @@ clean_txt:
 
 clean_bin:
 	rm -rf ./*.bin
+
+clean_gcda:
+	rm -rf ./build/*.gcda
 
 
 # make USE_AVX2=1 ADD_FLAGS=-DSETTINGS_FILENAME='\"settings_avx.txt\"' OPTS="-g" DEBUG_=0 rebuild all 

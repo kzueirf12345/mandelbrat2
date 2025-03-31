@@ -32,11 +32,11 @@ const char* mandelbrat2_strerror(const enum Mandelbrat2Error error);
 typedef struct Mandelbrat2State
 {
     size_t iters_cnt;
-    double r_circle_inf;
+    float r_circle_inf;
 
-    double scale;
-    double x_offset;
-    double y_offset;
+    float scale;
+    float x_offset;
+    float y_offset;
 
 } mandelbrat2_state_t;
 

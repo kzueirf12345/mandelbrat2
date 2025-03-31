@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <locale.h>
-#include <xmmintrin.h>
-#include <time.h>
 
 #include <SDL2/SDL.h>
 
@@ -10,7 +8,7 @@
 #include "flags/flags.h"
 #include "mandelbrat2/mandelbrat2.h"
 #include "sdl_objs/sdl_objs.h"
-#include "FPS_checker/FPS_checker.h"
+#include "time_checker/time_checker.h"
 
 int init_all(flags_objs_t* const flags_objs, const int argc, char* const * argv, 
              sdl_objs_t* const sdl_objs,
@@ -40,26 +38,24 @@ int main(const int argc, char* const argv[])
                                                                    dtor_all(&flags_objs, &sdl_objs);
             );
         }
-        
-        clock_t start_time = clock();
 
         MANDELBRAT2_ERROR_HANDLE(print_frame(sdl_objs.pixels_texture, &state, &flags_objs),
                                                                    dtor_all(&flags_objs, &sdl_objs);
         );
-
-        double elapsed_time = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-        printf("time of work on one frame: %lg s\n", elapsed_time);
 
         if (flags_objs.use_graphics)
         {
             SDL_ERROR_HANDLE(SDL_RenderCopy(sdl_objs.renderer, sdl_objs.pixels_texture, NULL, NULL),
                                                                    dtor_all(&flags_objs, &sdl_objs);
             );
+        }
 
-            FPS_CHECKER_ERROR_HANDLE(FPS_checker_update(&sdl_objs),
+        TIME_CHECKER_ERROR_HANDLE(time_checker_update(&sdl_objs),
                                                                    dtor_all(&flags_objs, &sdl_objs);
-            );
+        );
 
+        if (flags_objs.use_graphics)
+        {
             SDL_RenderPresent(sdl_objs.renderer);
         }
     }
@@ -104,7 +100,7 @@ int init_all(flags_objs_t* const flags_objs, const int argc, char* const * argv,
     
     if (flags_objs->use_graphics)
     {
-        FPS_CHECKER_ERROR_HANDLE(FPS_checker_ctor(FPS_FREQ_MS), 
+        TIME_CHECKER_ERROR_HANDLE(time_checker_ctor(FPS_FREQ_MS), 
                                                                             sdl_objs_dtor(sdl_objs);
                                                                         flags_objs_dtor(flags_objs);
                                                                                       logger_dtor();
@@ -112,7 +108,7 @@ int init_all(flags_objs_t* const flags_objs, const int argc, char* const * argv,
     }
 
     MANDELBRAT2_ERROR_HANDLE(mandelbrat2_state_ctor(state, flags_objs),
-                                                                                 FPS_checker_dtor();
+                                                                                 time_checker_dtor();
                                                                             sdl_objs_dtor(sdl_objs);
                                                                         flags_objs_dtor(flags_objs);
                                                                                       logger_dtor();
@@ -125,7 +121,7 @@ int dtor_all(flags_objs_t* const flags_objs, sdl_objs_t* const sdl_objs)
 {
     if (flags_objs->use_graphics)
     {
-                                                                                 FPS_checker_dtor();
+                                                                                 time_checker_dtor();
     }
                                                                             sdl_objs_dtor(sdl_objs);
 

@@ -159,10 +159,10 @@ enum SdlObjsError sdl_handle_events(SDL_Event* event, const flags_objs_t * const
                         case SDLK_DOWN:     state->y_offset -= OFFSET_STEP;  break;
 
                         case SDLK_EQUALS: 
-                            state->scale *= (1. + SCALE_STEP) * (modifiers & KMOD_SHIFT); 
+                            state->scale *= (1.f + SCALE_STEP * (float)(modifiers & KMOD_SHIFT)); 
                             break;
                         case SDLK_MINUS:    
-                            state->scale *= (1. - SCALE_STEP) * (modifiers & KMOD_SHIFT);
+                            state->scale *= (1.f - SCALE_STEP * (float)(modifiers & KMOD_SHIFT));
                             break;
 
                         default: break;
