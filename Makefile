@@ -1,6 +1,7 @@
 .PHONY: all build clean rebuild \
 		logger_build logger_clean logger_rebuild \
 		clean_all clean_log clean_out clean_obj clean_deps clean_txt clean_bin \
+		analyze generate_analyze
 
 
 PROJECT_NAME = mandelbrat2
@@ -14,6 +15,9 @@ USE_AVX2 ?= 1
 
 ifeq ($(origin FLAGS), undefined)
 
+
+ifeq ($(COMPILER),gcc)
+
 FLAGS =	-Wall -Wextra -Waggressive-loop-optimizations \
 		-Wmissing-declarations -Wcast-align -Wcast-qual -Wchar-subscripts \
 		-Wconversion -Wempty-body -Wfloat-equal \
@@ -25,24 +29,49 @@ FLAGS =	-Wall -Wextra -Waggressive-loop-optimizations \
 		-Wundef -Wunreachable-code -Wunused -Wvariadic-macros \
 		-Wno-missing-field-initializers -Wno-narrowing -Wno-varargs \
 		-Wstack-protector -fcheck-new -fstack-protector -fstrict-overflow \
-		-flto-odr-type-merging -fno-omit-frame-pointer -Wlarger-than=81920 -Wstack-usage=81920 -pie \
-		-fPIE -Werror=vla \
+		-fno-omit-frame-pointer -Wlarger-than=81920 -Wstack-usage=81920 -pie \
+		-fPIE -Werror=vla -flto-odr-type-merging\
 
 SANITIZER = -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,$\
 		integer-divide-by-zero,leak,nonnull-attribute,null,object-size,return,returns-nonnull-attribute,$\
 		shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
 
-DEBUG_FLAGS = -D _DEBUG  -ggdb -Og -g3 -D_FORTIFY_SOURCES=3 $(SANITIZER)
-RELEASE_FLAGS = -DNDEBUG -O3 -ffast-math -funroll-loops -flto -fopenmp -mfma
+else
+
+FLAGS = -Wall -Wextra \
+        -Wmissing-declarations -Wcast-align -Wcast-qual -Wchar-subscripts \
+        -Wconversion -Wempty-body -Wfloat-equal \
+        -Wformat-nonliteral -Wformat-security -Wformat-signedness -Wformat=2 -Winline \
+        -Wpointer-arith -Winit-self \
+        -Wredundant-decls -Wshadow -Wsign-conversion \
+        -Wstrict-overflow=2 -Wswitch-default -Wswitch-enum \
+        -Wundef -Wunreachable-code -Wunused -Wvariadic-macros \
+        -Wno-missing-field-initializers -Wno-narrowing -Wno-varargs \
+        -fstack-protector -fstrict-overflow \
+        -fno-omit-frame-pointer \
+        -fPIE -Werror=vla -flto=thin
+
+SANITIZER = -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,\
+            integer-divide-by-zero,leak,nonnull-attribute,null,object-size,return,shift,\
+            signed-integer-overflow,undefined,unreachable,vptr
+
+endif
+
+DEBUG_FLAGS = -D _DEBUG  -ggdb -g3 -D_FORTIFY_SOURCES=3 $(SANITIZER)
+RELEASE_FLAGS = -DNDEBUG
 
 ifneq ($(DEBUG_),0)
-FLAGS += $(DEBUG_FLAGS)
+OPTIMIZE_LVL ?= -Og
+FLAGS += $(DEBUG_FLAGS) 
 else
+OPTIMIZE_LVL ?= -O2
 FLAGS += $(RELEASE_FLAGS)
 endif
 
+FLAGS += $(OPTIMIZE_LVL)
+
 ifneq ($(USE_AVX2),0)
-FLAGS += -mavx -mavx2 -march=native 
+FLAGS += -mavx -mavx2 -march=native -fopenmp
 endif
 
 endif
@@ -121,8 +150,44 @@ clean_bin:
 	rm -rf ./*.bin
 
 clean_gcda:
-	rm -rf ./build/*.gcda
+	sudo find ./ -type f -name "*.gcda" -exec rm -f {} \;
 
+OUTPUTS = ./assets/gcc_none ./assets/gcc_compile_optimized ./assets/gcc_avx2 ./assets/gcc_avx2_compile_optimized \
+		  ./assets/clang_none ./assets/clang_compile_optimized ./assets/clang_avx2 ./assets/clang_avx2_compile_optimized
 
-# make USE_AVX2=1 ADD_FLAGS=-DSETTINGS_FILENAME='\"settings_avx.txt\"' OPTS="-g" DEBUG_=0 rebuild all 
-# make USE_AVX2=0 ADD_FLAGS=-DSETTINGS_FILENAME='\"settings.txt\"'     OPTS="-g" DEBUG_=0 rebuild all 
+GRAPHIC	= ./assets/histogram
+
+ANALYZE_NUM ?= 3
+
+OUTPUTS_NUM = $(foreach out,$(OUTPUTS),$(out)$(ANALYZE_NUM).txt)
+GRAPHIC_NUM = $(foreach graphic,$(GRAPHIC),$(graphic)$(ANALYZE_NUM).png)
+
+REP_CNT ?= 10
+MEASURE_CNT ?= 5
+
+generate_analyze: 
+	sudo nice -n -20 make COMPILER=clang DEBUG_=0 USE_AVX2=0 ADD_FLAGS="-DSETTINGS_FILENAME='\"settings.txt\"'" 																														OPTS="-r $(REP_CNT) -o ./assets/clang_none$(ANALYZE_NUM).txt   		      		-c $(MEASURE_CNT)" rebuild all ;
+	sudo nice -n -20 make COMPILER=clang DEBUG_=0 USE_AVX2=0 ADD_FLAGS="-DSETTINGS_FILENAME='\"settings.txt\"'     -ffast-math -funroll-loops -flto -fopenmp -mfma -DCOMPILE_OPTIMIZED -fprofile-instr-generate"						OPTS="-r $(REP_CNT) -o ./assets/clang_compile_optimized$(ANALYZE_NUM).txt       -c $(MEASURE_CNT)" rebuild all ;
+	sudo llvm-profdata merge -output=./program.profdata ./default.profraw ;
+	sudo nice -n -20 make COMPILER=clang DEBUG_=0 USE_AVX2=0 ADD_FLAGS="-DSETTINGS_FILENAME='\"settings.txt\"'     -ffast-math -funroll-loops -flto -fopenmp -mfma -DCOMPILE_OPTIMIZED -fprofile-instr-use=$(CURDIR)/program.profdata" 	OPTS="-r $(REP_CNT) -o ./assets/clang_compile_optimized$(ANALYZE_NUM).txt       -c $(MEASURE_CNT)" rebuild all ;
+	sudo rm ./default.profraw ;
+	sudo nice -n -20 make COMPILER=clang DEBUG_=0 USE_AVX2=1 ADD_FLAGS="-DSETTINGS_FILENAME='\"settings_avx.txt\"'" 																													OPTS="-r $(REP_CNT) -o ./assets/clang_avx2$(ANALYZE_NUM).txt     			  	-c $(MEASURE_CNT)" rebuild all ;
+	sudo nice -n -20 make COMPILER=clang DEBUG_=0 USE_AVX2=1 ADD_FLAGS="-DSETTINGS_FILENAME='\"settings_avx.txt\"' -ffast-math -funroll-loops -flto -fopenmp -mfma -DCOMPILE_OPTIMIZED -fprofile-instr-generate"						OPTS="-r $(REP_CNT) -o ./assets/clang_avx2_compile_optimized$(ANALYZE_NUM).txt  -c $(MEASURE_CNT)" rebuild all ;
+	sudo llvm-profdata merge -output=./program.profdata ./default.profraw ;
+	sudo nice -n -20 make COMPILER=clang DEBUG_=0 USE_AVX2=1 ADD_FLAGS="-DSETTINGS_FILENAME='\"settings_avx.txt\"' -ffast-math -funroll-loops -flto -fopenmp -mfma -DCOMPILE_OPTIMIZED -fprofile-instr-use=$(CURDIR)/program.profdata"	OPTS="-r $(REP_CNT) -o ./assets/clang_avx2_compile_optimized$(ANALYZE_NUM).txt  -c $(MEASURE_CNT)" rebuild all ;
+	sudo rm ./default.profraw
+	sudo nice -n -20 make COMPILER=gcc   DEBUG_=0 USE_AVX2=0 ADD_FLAGS="-DSETTINGS_FILENAME='\"settings.txt\"'" 																														OPTS="-r $(REP_CNT) -o ./assets/gcc_none$(ANALYZE_NUM).txt   		      		-c $(MEASURE_CNT)" rebuild all ;
+	sudo nice -n -20 make COMPILER=gcc   DEBUG_=0 USE_AVX2=0 ADD_FLAGS="-DSETTINGS_FILENAME='\"settings.txt\"'     -ffast-math -funroll-loops -flto -fopenmp -mfma -DCOMPILE_OPTIMIZED -fprofile-generate"   							OPTS="-r $(REP_CNT) -o ./assets/gcc_compile_optimized$(ANALYZE_NUM).txt   		-c $(MEASURE_CNT)" rebuild all ;
+	sudo nice -n -20 make COMPILER=gcc   DEBUG_=0 USE_AVX2=0 ADD_FLAGS="-DSETTINGS_FILENAME='\"settings.txt\"'     -ffast-math -funroll-loops -flto -fopenmp -mfma -DCOMPILE_OPTIMIZED -fprofile-use"        							OPTS="-r $(REP_CNT) -o ./assets/gcc_compile_optimized$(ANALYZE_NUM).txt   		-c $(MEASURE_CNT)" rebuild all ;
+	make clean_gcda ;
+	sudo nice -n -20 make COMPILER=gcc   DEBUG_=0 USE_AVX2=1 ADD_FLAGS="-DSETTINGS_FILENAME='\"settings_avx.txt\"'" 																													OPTS="-r $(REP_CNT) -o ./assets/gcc_avx2$(ANALYZE_NUM).txt     			  		-c $(MEASURE_CNT)" rebuild all ;
+	sudo nice -n -20 make COMPILER=gcc   DEBUG_=0 USE_AVX2=1 ADD_FLAGS="-DSETTINGS_FILENAME='\"settings_avx.txt\"' -ffast-math -funroll-loops -flto -fopenmp -mfma -DCOMPILE_OPTIMIZED -fprofile-generate" 								OPTS="-r $(REP_CNT) -o ./assets/gcc_avx2_compile_optimized$(ANALYZE_NUM).txt    -c $(MEASURE_CNT)" rebuild all ;
+	sudo nice -n -20 make COMPILER=gcc   DEBUG_=0 USE_AVX2=1 ADD_FLAGS="-DSETTINGS_FILENAME='\"settings_avx.txt\"' -ffast-math -funroll-loops -flto -fopenmp -mfma -DCOMPILE_OPTIMIZED -fprofile-use" 									OPTS="-r $(REP_CNT) -o ./assets/gcc_avx2_compile_optimized$(ANALYZE_NUM).txt    -c $(MEASURE_CNT)" rebuild all ;
+	make clean_gcda ;
+
+analyze:
+	python $(SRC_DIR)/analyze.py $(MEASURE_CNT) $(REP_CNT) $(OUTPUTS_NUM) $(GRAPHIC_NUM)
+
+# make USE_AVX2=1 ADD_FLAGS=-"DSETTINGS_FILENAME='\"settings_avx.txt\"'" 			OPTS="-g" DEBUG_=0 rebuild all 
+# make USE_AVX2=1 ADD_FLAGS="-DSETTINGS_FILENAME='\"settings_avx.txt\"' -DNO_X86" 	OPTS="-g" DEBUG_=0 rebuild all
+# make USE_AVX2=0 ADD_FLAGS=-"DSETTINGS_FILENAME='\"settings.txt\"'"     			OPTS="-g" DEBUG_=0 rebuild all 

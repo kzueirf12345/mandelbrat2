@@ -33,8 +33,9 @@ const char* time_checker_strerror(const enum TimeCheckerError error);
 
 #endif /* TIME_CHECKER_SRC_TIME_CHECKER_TIME_CHECKER_H */
 
-enum TimeCheckerError time_checker_ctor(const double fps_update_freq);
-void                  time_checker_dtor(void);
+enum TimeCheckerError time_checker_ctor(const double fps_update_freq, const bool use_graphics,
+                                        const char* const output_filename);
+enum TimeCheckerError time_checker_dtor(void);
 
 enum TimeCheckerError time_checker_update(const sdl_objs_t* const sdl_objs);
 enum TimeCheckerError time_checker_print (const sdl_objs_t* const sdl_objs);

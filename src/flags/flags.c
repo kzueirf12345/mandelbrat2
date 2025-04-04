@@ -37,6 +37,12 @@ enum FlagsError flags_objs_ctor(flags_objs_t* const flags_objs)
         return FLAGS_ERROR_SUCCESS;
     }
 
+    if (!strncpy(flags_objs->output_filename, "./assets/output.txt", FILENAME_MAX))
+    {
+        perror("Can't strncpy flags_objs->input_file");
+        return FLAGS_ERROR_SUCCESS;
+    }
+
     if (!strncpy(flags_objs->font_filename, "./assets/fonts/Montserrat-SemiBold.ttf", FILENAME_MAX))
     {
         perror("Can't strncpy flags_objs->input_file");
@@ -54,6 +60,7 @@ enum FlagsError flags_objs_ctor(flags_objs_t* const flags_objs)
     flags_objs->use_graphics        = false;
 
     flags_objs->rep_calc_frame_cnt  = 1;
+    flags_objs->frame_calc_cnt      = 0;
 
     return FLAGS_ERROR_SUCCESS;
 }
@@ -80,7 +87,7 @@ enum FlagsError flags_processing(flags_objs_t* const flags_objs,
     lassert(argc, "");
 
     int getopt_rez = 0;
-    while ((getopt_rez = getopt(argc, argv, "l:i:w:h:x:y:s:r:f:g")) != -1)
+    while ((getopt_rez = getopt(argc, argv, "l:i:o:w:h:x:y:s:r:f:c:g")) != -1)
     {
         switch (getopt_rez)
         {
@@ -100,6 +107,17 @@ enum FlagsError flags_processing(flags_objs_t* const flags_objs,
                 if (!strncpy(flags_objs->input_filename, optarg, FILENAME_MAX))
                 {
                     perror("Can't strncpy flags_objs->input_filename");
+                    return FLAGS_ERROR_FAILURE;
+                }
+
+                break;
+            }
+
+            case 'o':
+            {
+                if (!strncpy(flags_objs->output_filename, optarg, FILENAME_MAX))
+                {
+                    perror("Can't strncpy flags_objs->output_filename");
                     return FLAGS_ERROR_FAILURE;
                 }
 
@@ -185,6 +203,13 @@ enum FlagsError flags_processing(flags_objs_t* const flags_objs,
                 break;
             }
 
+            case 'c':
+            {
+                flags_objs->frame_calc_cnt = (size_t)atoll(optarg);
+
+                break;
+            }
+
             default:
             {
                 fprintf(stderr, "Getopt error - d: %d, c: %c\n", getopt_rez, (char)getopt_rez);
@@ -193,11 +218,18 @@ enum FlagsError flags_processing(flags_objs_t* const flags_objs,
         }
     }
 
+    if (flags_objs->use_graphics && flags_objs->frame_calc_cnt != 0)
+    {
+        fprintf(stderr, "Invalid flags combintaions\n");
+        return FLAGS_ERROR_FAILURE;
+    }
+
     if (!(flags_objs->input_file = fopen(flags_objs->input_filename, "rb")))
     {
         perror("Can't open input file");
         return FLAGS_ERROR_FAILURE;
     }
+
 
     return FLAGS_ERROR_SUCCESS;
 }

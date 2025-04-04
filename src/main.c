@@ -25,15 +25,15 @@ int main(const int argc, char* const argv[])
 
     SDL_Event event = {};
     SDL_bool quit = SDL_FALSE;
+    size_t frame_cnt = 0;
     while (!quit) 
     {
-        SDL_OBJS_ERROR_HANDLE(sdl_handle_events(&event, &flags_objs, &state, &quit),
-                                                                   dtor_all(&flags_objs, &sdl_objs);
-        );
-        
-
         if (flags_objs.use_graphics)
         {
+            SDL_OBJS_ERROR_HANDLE(sdl_handle_events(&event, &flags_objs, &state, &quit),
+                                                                   dtor_all(&flags_objs, &sdl_objs);
+            );
+
             SDL_ERROR_HANDLE(SDL_RenderClear(sdl_objs.renderer),
                                                                    dtor_all(&flags_objs, &sdl_objs);
             );
@@ -57,6 +57,13 @@ int main(const int argc, char* const argv[])
         if (flags_objs.use_graphics)
         {
             SDL_RenderPresent(sdl_objs.renderer);
+        }
+
+        ++frame_cnt;
+
+        if (flags_objs.frame_calc_cnt != 0 && frame_cnt >= flags_objs.frame_calc_cnt)
+        {
+            quit = true;
         }
     }
 
@@ -91,21 +98,20 @@ int init_all(flags_objs_t* const flags_objs, const int argc, char* const * argv,
                                                                         flags_objs_dtor(flags_objs);
         return EXIT_FAILURE;
     }
-
-
-    SDL_OBJS_ERROR_HANDLE(sdl_objs_ctor(sdl_objs, flags_objs),
-                                                                        flags_objs_dtor(flags_objs);
-                                                                                      logger_dtor();
-    );
     
     if (flags_objs->use_graphics)
     {
-        TIME_CHECKER_ERROR_HANDLE(time_checker_ctor(FPS_FREQ_MS), 
-                                                                            sdl_objs_dtor(sdl_objs);
+        SDL_OBJS_ERROR_HANDLE(sdl_objs_ctor(sdl_objs, flags_objs),
                                                                         flags_objs_dtor(flags_objs);
                                                                                       logger_dtor();
         );
     }
+    TIME_CHECKER_ERROR_HANDLE(
+        time_checker_ctor(FPS_FREQ_MS, flags_objs->use_graphics, flags_objs->output_filename), 
+                                                                        sdl_objs_dtor(sdl_objs);
+                                                                    flags_objs_dtor(flags_objs);
+                                                                                  logger_dtor();
+    );
 
     MANDELBRAT2_ERROR_HANDLE(mandelbrat2_state_ctor(state, flags_objs),
                                                                                  time_checker_dtor();
@@ -121,9 +127,9 @@ int dtor_all(flags_objs_t* const flags_objs, sdl_objs_t* const sdl_objs)
 {
     if (flags_objs->use_graphics)
     {
-                                                                                 time_checker_dtor();
-    }
                                                                             sdl_objs_dtor(sdl_objs);
+    }
+    TIME_CHECKER_ERROR_HANDLE(                                                 time_checker_dtor());
 
     LOGG_ERROR_HANDLE(                                                               logger_dtor());
     FLAGS_ERROR_HANDLE(                                                flags_objs_dtor(flags_objs));

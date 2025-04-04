@@ -37,6 +37,7 @@ typedef struct FlagsObjs
 {
     char log_folder         [FILENAME_MAX + 1];
     char input_filename     [FILENAME_MAX + 1];
+    char output_filename    [FILENAME_MAX + 1];
     char font_filename      [FILENAME_MAX + 1];
 
     FILE* input_file;
@@ -49,6 +50,7 @@ typedef struct FlagsObjs
     bool use_graphics;
 
     size_t rep_calc_frame_cnt;
+    size_t frame_calc_cnt;
 } flags_objs_t;
 
 enum FlagsError flags_objs_ctor (flags_objs_t* const flags_objs);

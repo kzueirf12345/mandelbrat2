@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
@@ -47,26 +48,47 @@ static struct
     Uint32 last_time_fps_ms;
     double fps_update_freq;
     double FPS;
-} TIME_CHECKER_ = {.last_time_fps_ms = 0, .last_time_tiks = 0, .fps_update_freq = 0, .tiks = 0,
-                   .frame_cnt_fps = 0, .FPS = 0, .frame_cnt = 0};
 
-enum TimeCheckerError time_checker_ctor(const double fps_update_freq)
+    bool use_graphics;
+
+    FILE* output_file;
+} TIME_CHECKER_ = {.last_time_fps_ms = 0, .last_time_tiks = 0, .fps_update_freq = 0, .tiks = 0,
+                   .frame_cnt_fps = 0, .FPS = 0, .frame_cnt = 0, .use_graphics = false,
+                   .output_file = NULL};
+
+enum TimeCheckerError time_checker_ctor(const double fps_update_freq, const bool use_graphics,
+                                        const char* const output_filename)
 {
     lassert((long)fps_update_freq, "");
+    lassert(!is_invalid_ptr(output_filename), "");
 
-    TIME_CHECKER_.last_time_tiks            = _rdtsc();
+    TIME_CHECKER_.last_time_tiks            = __rdtsc();
     TIME_CHECKER_.fps_update_freq           = fps_update_freq;
     TIME_CHECKER_.FPS                       = 0;
     TIME_CHECKER_.frame_cnt_fps             = 0;
     TIME_CHECKER_.tiks                      = 0;
     TIME_CHECKER_.frame_cnt                 = 0;
     TIME_CHECKER_.last_time_fps_ms          = SDL_GetTicks();
+    TIME_CHECKER_.use_graphics              = use_graphics;
+    
+    if (!(TIME_CHECKER_.output_file = fopen(output_filename, "wb")))
+    {
+        perror("Can't open output_file");
+        return TIME_CHECKER_ERROR_STANDARD_ERRNO;
+    }
 
     return TIME_CHECKER_ERROR_SUCCESS;
 }
 
-void time_checker_dtor(void)
+enum TimeCheckerError time_checker_dtor(void)
 {
+    if (TIME_CHECKER_.output_file && fclose(TIME_CHECKER_.output_file))
+    {
+        perror("Can't fclose output_file");
+        return TIME_CHECKER_ERROR_STANDARD_ERRNO;
+    }
+
+    IF_DEBUG(TIME_CHECKER_.output_file          = NULL);
     IF_DEBUG(TIME_CHECKER_.last_time_tiks       = 0);
     IF_DEBUG(TIME_CHECKER_.fps_update_freq      = 0);
     IF_DEBUG(TIME_CHECKER_.FPS                  = 0);
@@ -74,27 +96,33 @@ void time_checker_dtor(void)
     IF_DEBUG(TIME_CHECKER_.tiks                 = 0);
     IF_DEBUG(TIME_CHECKER_.frame_cnt            = 0);
     IF_DEBUG(TIME_CHECKER_.last_time_fps_ms     = 0);
+    IF_DEBUG(TIME_CHECKER_.use_graphics         = false);
+
+    return TIME_CHECKER_ERROR_SUCCESS;
 }
 
 enum TimeCheckerError time_checker_update(const sdl_objs_t* const sdl_objs)
 {
     lassert(!is_invalid_ptr(sdl_objs), "");
 
-    const uint64_t cur_time_tiks = _rdtsc();
+    const uint64_t cur_time_tiks = __rdtsc();
     TIME_CHECKER_.tiks = cur_time_tiks - TIME_CHECKER_.last_time_tiks;
 
     ++TIME_CHECKER_.frame_cnt_fps;
     ++TIME_CHECKER_.frame_cnt;
 
-    const Uint32 cur_time_ms    = SDL_GetTicks();
-    const Uint32 delta_time_ms  = cur_time_ms - TIME_CHECKER_.last_time_fps_ms;
-
-    if (delta_time_ms >= TIME_CHECKER_.fps_update_freq)
+    if (TIME_CHECKER_.use_graphics)
     {
-        TIME_CHECKER_.FPS = (double)TIME_CHECKER_.frame_cnt_fps / (double)(delta_time_ms) * 1000.;
-
-        TIME_CHECKER_.frame_cnt_fps = 0;
-        TIME_CHECKER_.last_time_fps_ms = cur_time_ms;
+        const Uint32 cur_time_ms    = SDL_GetTicks();
+        const Uint32 delta_time_ms  = cur_time_ms - TIME_CHECKER_.last_time_fps_ms;
+    
+        if (delta_time_ms >= TIME_CHECKER_.fps_update_freq)
+        {
+            TIME_CHECKER_.FPS = (double)TIME_CHECKER_.frame_cnt_fps / (double)(delta_time_ms) * 1000.;
+    
+            TIME_CHECKER_.frame_cnt_fps = 0;
+            TIME_CHECKER_.last_time_fps_ms = cur_time_ms;
+        }
     }
 
     TIME_CHECKER_ERROR_HANDLE(time_checker_print(sdl_objs));
@@ -111,7 +139,12 @@ enum TimeCheckerError time_checker_print(const sdl_objs_t* const sdl_objs)
     lassert(!is_invalid_ptr(sdl_objs->font), "");
     lassert(!is_invalid_ptr(sdl_objs->renderer), "");
 
-    printf("Time for calculate %zu frame: %zu tiks\n", TIME_CHECKER_.frame_cnt, TIME_CHECKER_.tiks);
+    fprintf(TIME_CHECKER_.output_file, "%zu %zu\n", TIME_CHECKER_.frame_cnt, TIME_CHECKER_.tiks);
+
+    if (!TIME_CHECKER_.use_graphics)
+    {
+        return TIME_CHECKER_ERROR_SUCCESS;
+    }
 
     char* const TIME_str = calloc(TIME_STR_SIZE, sizeof(char));
     if (!TIME_str)
