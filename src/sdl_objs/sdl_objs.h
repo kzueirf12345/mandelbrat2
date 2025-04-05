@@ -15,7 +15,7 @@ enum SdlObjsError
     SDL_OBJS_ERROR_SDL              = 1,
     SDL_OBJS_ERROR_TTF              = 2,
 };
-static_assert(SDL_OBJS_ERROR_SUCCESS  == 0);
+static_assert(SDL_OBJS_ERROR_SUCCESS  == 0, "");
 
 const char* sdl_objs_strerror(const enum SdlObjsError error);
 

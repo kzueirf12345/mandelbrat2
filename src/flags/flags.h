@@ -10,7 +10,7 @@ enum FlagsError
     FLAGS_ERROR_SUCCESS     = 0,
     FLAGS_ERROR_FAILURE     = 1,
 };
-static_assert(FLAGS_ERROR_SUCCESS  == 0);
+static_assert(FLAGS_ERROR_SUCCESS  == 0, "");
 
 const char* flags_strerror(const enum FlagsError error);
 

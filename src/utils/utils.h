@@ -64,7 +64,7 @@ enum PtrState
     PTR_STATES_INVALID = 2,
     PTR_STATES_ERROR   = 3
 };
-static_assert(PTR_STATES_VALID == 0);
+static_assert(PTR_STATES_VALID == 0, "");
 
 enum PtrState is_invalid_ptr(const void* ptr);
 

@@ -13,7 +13,7 @@ enum Mandelbrat2Error
     MANDELBRAT2_ERROR_SDL               = 1,
     MANDELBRAT2_ERROR_STANDARD_ERRNO    = 2,
 };
-static_assert(MANDELBRAT2_ERROR_SUCCESS  == 0);
+static_assert(MANDELBRAT2_ERROR_SUCCESS  == 0, "");
 
 const char* mandelbrat2_strerror(const enum Mandelbrat2Error error);
 

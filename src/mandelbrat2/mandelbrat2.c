@@ -92,9 +92,9 @@ enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture,
     for (size_t repeat = 0; repeat < flags_objs->rep_calc_frame_cnt; ++repeat)
     {
 
-#ifndef COMPILE_OPTIMIZED
-#pragma omp parallel for collapse(1) schedule(guided)
-#endif /*COMPILE_OPTIMIZED*/
+// #ifdef COMPILE_OPTIMIZED
+// #pragma omp parallel for collapse(1) schedule(guided)
+// #endif /*COMPILE_OPTIMIZED*/
 
         for (size_t y_screen = 0; y_screen < (size_t)flags_objs->screen_height; ++y_screen)
         {
@@ -140,7 +140,9 @@ enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture,
 
 #else /*__AVX2__*/
 
-#ifndef NO_X86
+#ifdef X86
+
+#ifdef UNROLL
 
 #define Y0_CTOR4_                                                                                   \
     __m256 y01 = _mm256_sub_ps(_mm256_set1_ps((float)y_screen * SCALE), Y_OFFSET);                  \
@@ -228,7 +230,7 @@ enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture,
 
 
 #ifndef __aligned
-#define __aligned __attribute__((aligned(64)))
+#define __aligned __attribute__((aligned(32)))
 #endif
 
 #define UNROLL_CNT 4
@@ -272,9 +274,9 @@ enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture,
     for (size_t repeat = 0; repeat < REP_CNT; ++repeat)
     {
 
-#ifndef COMPILE_OPTIMIZED
-#pragma omp parallel for collapse(1) schedule(guided)
-#endif /*COMPILE_OPTIMIZED*/
+// #ifdef COMPILE_OPTIMIZED
+// #pragma omp parallel for collapse(1) schedule(guided)
+// #endif /*COMPILE_OPTIMIZED*/
 
         for (size_t y_screen = 0; y_screen < SCREEN_HEIGHT; ++y_screen)
         {
@@ -305,7 +307,11 @@ enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture,
 
                 if (flags_objs->use_graphics)
                 {
-                    __m256 iter[UNROLL_CNT] = {iter1, iter2, iter3, iter4};
+                    float iter[UNROLL_CNT*SIMD_OBJS_CNT] = {};
+                    for (size_t i = 0; i < SIMD_OBJS_CNT; ++i) { iter[i + SIMD_OBJS_CNT*(1-1)] = iter1[i] ;}
+                    for (size_t i = 0; i < SIMD_OBJS_CNT; ++i) { iter[i + SIMD_OBJS_CNT*(2-1)] = iter2[i] ;}
+                    for (size_t i = 0; i < SIMD_OBJS_CNT; ++i) { iter[i + SIMD_OBJS_CNT*(3-1)] = iter3[i] ;}
+                    for (size_t i = 0; i < SIMD_OBJS_CNT; ++i) { iter[i + SIMD_OBJS_CNT*(4-1)] = iter4[i] ;}
 
                     for (size_t i = 0; i < SIMD_OBJS_CNT*UNROLL_CNT; ++i)
                     {
@@ -327,10 +333,112 @@ enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture,
     return MANDELBRAT2_ERROR_SUCCESS;
 }
 
-#else /*NO_X86*/
+#else /*UNROLL*/
 
 #ifndef __aligned
-#define __aligned __attribute__((aligned(64)))
+#define __aligned __attribute__((aligned(32)))
+#endif
+
+#define SIMD_OBJS_CNT 8 
+enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture, 
+                                  const mandelbrat2_state_t* const state,
+                                  const flags_objs_t* const flags_objs)
+{
+    if (flags_objs->use_graphics)
+    {
+        lassert(!is_invalid_ptr(pixels_texture), "");
+    }   
+    lassert(!is_invalid_ptr(state), "");
+    lassert(!is_invalid_ptr(flags_objs), "");
+
+    const float SCALE           = 1.0f / state->scale;
+    const size_t REP_CNT        = flags_objs->rep_calc_frame_cnt;
+    const size_t SCREEN_HEIGHT  = (size_t)flags_objs->screen_height;
+    const size_t SCREEN_WIDTH   = (size_t)flags_objs->screen_width - (SIMD_OBJS_CNT- 1);
+    const size_t ITERS_CNT      = state->iters_cnt;
+
+    const __m256 R_CIRCLE_INF2_VEC  = _mm256_set1_ps(state->r_circle_inf * state->r_circle_inf);
+    const __m256 SCALE_VEC          = _mm256_set1_ps(SCALE);
+    const __m256 X_OFFSET           = _mm256_set1_ps(state->x_offset * SCALE);
+    const __m256 Y_OFFSET           = _mm256_set1_ps(state->y_offset * SCALE);
+    const __m256 ONE                = _mm256_set1_ps(1.0f);
+    const __m256 TWO                = _mm256_set1_ps(2.0f);
+    const __m256 NATURAL08          = _mm256_setr_ps(0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f);
+
+    void *pixels_void __aligned = NULL;
+    int pitch = 0;
+
+    if (flags_objs->use_graphics)
+    {
+        SDL_ERROR_HANDLE_(SDL_LockTexture(pixels_texture, NULL, &pixels_void, &pitch));
+    }
+
+    Uint32* pixels __aligned = (Uint32*)pixels_void;
+
+    
+    for (size_t repeat = 0; repeat < REP_CNT; ++repeat)
+    {
+
+// #ifdef COMPILE_OPTIMIZED
+// #pragma omp parallel for collapse(1) schedule(guided)
+// #endif /*COMPILE_OPTIMIZED*/
+
+        for (size_t y_screen = 0; y_screen < SCREEN_HEIGHT; ++y_screen)
+        {
+            __m256 y0 = _mm256_sub_ps(_mm256_set1_ps((float)y_screen * SCALE), Y_OFFSET);
+    
+            for (size_t x_screen = 0; x_screen < SCREEN_WIDTH; x_screen += SIMD_OBJS_CNT)
+            {
+                __m256 x0 = _mm256_add_ps(NATURAL08, _mm256_set1_ps((float)x_screen + 8*0));
+                       x0 = _mm256_sub_ps(_mm256_mul_ps(x0, SCALE_VEC), X_OFFSET); 
+                
+                volatile __m256 iter = _mm256_setzero_ps(); 
+                __m256 x = x0;
+                __m256 y = y0;
+
+                for (size_t i = 0; i < ITERS_CNT; ++i) {
+                    __m256 xx = _mm256_mul_ps(x, x);
+                    __m256 yy = _mm256_mul_ps(y, y);
+                    __m256 xy = _mm256_mul_ps(x, y);
+                    
+                    __m256 cmp = _mm256_cmp_ps(_mm256_add_ps(xx, yy), R_CIRCLE_INF2_VEC, _CMP_LE_OQ); 
+
+                    if (_mm256_testz_ps(cmp, cmp)) 
+                        break;
+                    
+                    iter = _mm256_add_ps(iter, _mm256_and_ps(cmp, ONE)); 
+                    x = _mm256_add_ps(_mm256_sub_ps(xx, yy), x0);
+                    y = _mm256_fmadd_ps(xy, TWO, y0);
+                }
+
+                if (flags_objs->use_graphics)
+                {
+                    for (size_t i = 0; i < SIMD_OBJS_CNT; ++i)
+                    {
+                        const size_t pixel_addr = (y_screen) * (size_t)(pitch >> 2) + x_screen + i;
+                
+#include SETTINGS_FILENAME  // fill pixels[pixel_addr]
+
+                    }         
+                }
+            }
+        }
+    }
+
+    if (flags_objs->use_graphics)
+    {
+        SDL_UnlockTexture(pixels_texture);
+    }
+
+    return MANDELBRAT2_ERROR_SUCCESS;
+}
+
+#endif /*UNROLL*/
+
+#else /*X86*/
+
+#ifndef __aligned
+#define __aligned __attribute__((aligned(32)))
 #endif
 
 #define UNROLL_CNT 4
@@ -386,9 +494,9 @@ enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture,
     for (size_t repeat = 0; repeat < REP_CNT; ++repeat)
     {
 
-#ifndef COMPILE_OPTIMIZED
-#pragma omp parallel for collapse(1) schedule(guided)
-#endif /*COMPILE_OPTIMIZED*/
+// #ifdef COMPILE_OPTIMIZED
+// #pragma omp parallel for collapse(1) schedule(guided)
+// #endif /*COMPILE_OPTIMIZED*/
 
         for (size_t y_screen = 0; y_screen < SCREEN_HEIGHT; ++y_screen)
         {
@@ -640,7 +748,6 @@ enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture,
     return MANDELBRAT2_ERROR_SUCCESS;
 }
 
-#endif /*NO_X86*/
-
+#endif /*X86*/
 
 #endif /*__AVX2__*/

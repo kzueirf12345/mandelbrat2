@@ -15,7 +15,7 @@ enum TimeCheckerError
     TIME_CHECKER_ERROR_TTF               = 2,
     TIME_CHECKER_ERROR_STANDARD_ERRNO    = 3,
 };
-static_assert(TIME_CHECKER_ERROR_SUCCESS  == 0);
+static_assert(TIME_CHECKER_ERROR_SUCCESS  == 0, "");
 
 const char* time_checker_strerror(const enum TimeCheckerError error);
 
