@@ -2,6 +2,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
+from math import log, sqrt
 
 def process_file(filename, repeats):
     iterations = []
@@ -40,7 +41,8 @@ def plot_comparison(input_files, output_file, measurements, repeats):
     ratios = []
     if len(averages) > 1:
         base = min(averages)
-        ratios = [f"{avg/base:.2f}x" for avg in averages]
+        base_sem = sems[np.argmin(averages)]
+        ratios = [f"{averages[i]/base:.3f}x ± {averages[i]/base*sqrt((sems[i]/averages[i])**2 + (base_sem/base)**2):.3f}x" for i in range(len(averages))]
     
 
     plt.figure(figsize=(12, 8))
@@ -52,16 +54,18 @@ def plot_comparison(input_files, output_file, measurements, repeats):
     
 
     for i, (bar, ratio) in enumerate(zip(bars, ratios)):
-        height = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2., height + 0.01*max(averages),
-                f'{ratio}\n{1/averages[i]/1000_000_000:.3f} ± {1/sems[i]/1000_000_000:.3f} * 10⁹',
-                ha='center', va='bottom', fontsize=9)
+        # height = bar.get_height()
+        # plt.text(bar.get_x() + bar.get_width()/2., height + 0.01*max(averages),
+        #         f'{ratio}',
+        #         ha='center', va='bottom', fontsize=9)
+        print(f'{input_files[i]}\n{ratio} & {1/averages[i]/1000_000:.4f} ± {sems[i]/averages[i]/averages[i]/1000_000:.4f}')
         
-    for i in range(len(input_files)):
-        input_files[i] = input_files[i][9:]
-        input_files[i] = input_files[i][:-5]
+    nums = [i for i in range(len(input_files))];
+    # for i in range(len(input_files)):
+    #     input_files[i] = input_files[i][9:]
+    #     input_files[i] = input_files[i][:-5]
         
-    plt.xticks(x, input_files, rotation=45, ha='right')
+    plt.xticks(x, nums, rotation=0, ha='right')
     plt.xlabel('Версии программы')
     plt.ylabel('Обратная величина ко времени выполнения 1 итерации (1/такт)')
     

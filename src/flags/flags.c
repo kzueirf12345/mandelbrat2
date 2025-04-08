@@ -31,12 +31,6 @@ enum FlagsError flags_objs_ctor(flags_objs_t* const flags_objs)
         return FLAGS_ERROR_SUCCESS;
     }
 
-    if (!strncpy(flags_objs->input_filename, "./assets/settings.txt", FILENAME_MAX))
-    {
-        perror("Can't strncpy flags_objs->input_file");
-        return FLAGS_ERROR_SUCCESS;
-    }
-
     if (!strncpy(flags_objs->output_filename, "./assets/output.txt", FILENAME_MAX))
     {
         perror("Can't strncpy flags_objs->input_file");
@@ -87,7 +81,7 @@ enum FlagsError flags_processing(flags_objs_t* const flags_objs,
     lassert(argc, "");
 
     int getopt_rez = 0;
-    while ((getopt_rez = getopt(argc, argv, "l:i:o:w:h:x:y:s:r:f:c:g")) != -1)
+    while ((getopt_rez = getopt(argc, argv, "l:o:w:h:x:y:s:r:f:c:g")) != -1)
     {
         switch (getopt_rez)
         {
@@ -96,17 +90,6 @@ enum FlagsError flags_processing(flags_objs_t* const flags_objs,
                 if (!strncpy(flags_objs->log_folder, optarg, FILENAME_MAX))
                 {
                     perror("Can't strncpy flags_objs->log_folder");
-                    return FLAGS_ERROR_FAILURE;
-                }
-
-                break;
-            }
-
-            case 'i':
-            {
-                if (!strncpy(flags_objs->input_filename, optarg, FILENAME_MAX))
-                {
-                    perror("Can't strncpy flags_objs->input_filename");
                     return FLAGS_ERROR_FAILURE;
                 }
 
@@ -223,13 +206,6 @@ enum FlagsError flags_processing(flags_objs_t* const flags_objs,
         fprintf(stderr, "Invalid flags combintaions\n");
         return FLAGS_ERROR_FAILURE;
     }
-
-    if (!(flags_objs->input_file = fopen(flags_objs->input_filename, "rb")))
-    {
-        perror("Can't open input file");
-        return FLAGS_ERROR_FAILURE;
-    }
-
 
     return FLAGS_ERROR_SUCCESS;
 }

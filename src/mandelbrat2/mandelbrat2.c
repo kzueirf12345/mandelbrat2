@@ -34,6 +34,7 @@ const char* mandelbrat2_strerror(const enum Mandelbrat2Error error)
         }                                                                                           \
     } while(0)
 
+#include SETTINGS_FILENAME
 
 enum Mandelbrat2Error mandelbrat2_state_ctor(mandelbrat2_state_t* const state, 
                                              const flags_objs_t* const flags_objs)
@@ -44,19 +45,9 @@ enum Mandelbrat2Error mandelbrat2_state_ctor(mandelbrat2_state_t* const state,
     state->x_offset = (float)(flags_objs->screen_width  >> 1);
     state->y_offset = (float)(flags_objs->screen_height >> 1);
 
-    if (!fscanf(flags_objs->input_file, 
-                "%*[^$]$\n"
-                "iters_cnt = %zu\n"
-                "r_circle_inf = %f\n"
-                "scale = %f",
-                &state->iters_cnt,
-                &state->r_circle_inf,
-                &state->scale
-        ))
-    {
-        perror("Can't fscanf state into input file");
-        return MANDELBRAT2_ERROR_STANDARD_ERRNO;
-    }
+    state->iters_cnt = START_ITERS_CNT;
+    state->r_circle_inf = START_R_CIRCLE_INF;
+    state->scale = START_SCALE;
 
     return MANDELBRAT2_ERROR_SUCCESS;
 }
@@ -123,7 +114,7 @@ enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture,
     
                     const size_t pixel_addr = (y_screen) * (size_t)(pitch >> 2) + x_screen;
                 
-#include SETTINGS_FILENAME  // fill pixels[pixel_addr]
+                    pixels[pixel_addr] = get_color(iter);
                 
                 }
             }
@@ -140,9 +131,9 @@ enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture,
 
 #else /*__AVX2__*/
 
-#ifdef X86
+#ifndef X86 //FIXME
 
-#ifdef UNROLL
+#ifndef UNROLL //FIXME
 
 #define Y0_CTOR4_                                                                                   \
     __m256 y01 = _mm256_sub_ps(_mm256_set1_ps((float)y_screen * SCALE), Y_OFFSET);                  \
@@ -317,7 +308,7 @@ enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture,
                     {
                         const size_t pixel_addr = (y_screen) * (size_t)(pitch >> 2) + x_screen + i;
                 
-#include SETTINGS_FILENAME  // fill pixels[pixel_addr]
+                        pixels[pixel_addr] = get_color(iter[i]);
 
                     }         
                 }
@@ -417,7 +408,7 @@ enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture,
                     {
                         const size_t pixel_addr = (y_screen) * (size_t)(pitch >> 2) + x_screen + i;
                 
-#include SETTINGS_FILENAME  // fill pixels[pixel_addr]
+                        pixels[pixel_addr] = get_color(iter[i]);
 
                     }         
                 }
@@ -732,7 +723,7 @@ enum Mandelbrat2Error print_frame(SDL_Texture* pixels_texture,
                     {
                         const size_t pixel_addr = (y_screen) * (size_t)(pitch >> 2) + x_screen + i;
                 
-#include SETTINGS_FILENAME  // fill pixels[pixel_addr]
+                        pixels[pixel_addr] = get_color(iter[i]);
 
                     }         
                 }
